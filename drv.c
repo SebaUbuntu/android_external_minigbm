@@ -43,6 +43,9 @@ extern const struct backend backend_msm;
 #ifdef DRV_VC4
 extern const struct backend backend_vc4;
 #endif
+#ifdef DRV_GBM_MESA
+extern const struct backend backend_gbm_mesa;
+#endif
 
 // Dumb / generic drivers
 extern const struct backend backend_evdi;
@@ -85,16 +88,21 @@ static const struct backend *drv_backend_list[] = {
 
 void drv_preload(bool load)
 {
+#ifndef DRV_GBM_MESA
 	unsigned int i;
 	for (i = 0; i < ARRAY_SIZE(drv_backend_list); i++) {
 		const struct backend *b = drv_backend_list[i];
 		if (b->preload)
 			b->preload(load);
 	}
+#endif
 }
 
 static const struct backend *drv_get_backend(int fd)
 {
+#ifdef DRV_GBM_MESA
+	return &backend_gbm_mesa;
+#else
 	drmVersionPtr drm_version;
 	unsigned int i;
 
@@ -113,6 +121,7 @@ static const struct backend *drv_get_backend(int fd)
 
 	drmFreeVersion(drm_version);
 	return NULL;
+#endif
 }
 
 struct driver *drv_create(int fd)

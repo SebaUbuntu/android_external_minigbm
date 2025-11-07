@@ -51,7 +51,13 @@ filegroup {
         "virtgpu_cross_domain.c",
         "virtgpu_virgl.c",
         "xe.c",
-    ],
+    ] + select(soong_config_variable("minigbm", "platform"), {
+        "gbm_mesa": [
+            "gbm_mesa_driver/gbm_mesa_driver.cpp",
+            "gbm_mesa_driver/gbm_mesa_internals.cpp",
+        ],
+        default: [],
+    }),
 }
 
 filegroup {
@@ -81,6 +87,10 @@ msm_cflags = [
     "-DQCOM_DISABLE_COMPRESSED_NV12",
 ]
 arcvm_cflags = ["-DVIRTIO_GPU_NEXT"]
+gbm_mesa_cflags = [
+    "-DDRV_GBM_MESA",
+    "-DHAS_DMABUF_SYSTEM_HEAP",
+]
 
 cc_defaults {
     name: "minigbm_defaults",
@@ -100,6 +110,7 @@ cc_defaults {
         "meson": meson_cflags,
         "msm": msm_cflags,
         "arcvm": arcvm_cflags,
+        "gbm_mesa": gbm_mesa_cflags,
         default: [],
     }),
 
@@ -108,6 +119,11 @@ cc_defaults {
             cflags: ["-DANDROID_API_LEVEL=%d"],
         },
     },
+
+    required: select(soong_config_variable("minigbm", "platform"), {
+        "gbm_mesa": ["libgbm_mesa_wrapper"],
+        default: [],
+    }),
 }
 
 cc_library_headers {
@@ -322,4 +338,17 @@ cc_library_shared {
     name: "gralloc.minigbm_arcvm",
     defaults: ["minigbm_cros_gralloc0_defaults"],
     shared_libs: ["libminigbm_gralloc_arcvm"],
+}
+
+// GBM Mesa
+cc_library_shared {
+    name: "libminigbm_gralloc_gbm_mesa",
+    defaults: ["minigbm_cros_gralloc_library_defaults"],
+    cflags: gbm_mesa_cflags,
+}
+
+cc_library_shared {
+    name: "gralloc.minigbm_gbm_mesa",
+    defaults: ["minigbm_cros_gralloc0_defaults"],
+    shared_libs: ["libminigbm_gralloc_gbm_mesa"],
 }
